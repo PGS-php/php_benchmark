@@ -1,0 +1,15 @@
+---
+- hosts: all
+  become: true
+  become_user: www-data
+
+  tasks:
+    - name: install dependencies by composer
+      command: composer install
+      args:
+        chdir: /var/www/current/active
+
+    - name: create database structure
+      command: php console doctrine:schema:create
+      args:
+        chdir: /var/www/current/active/bin

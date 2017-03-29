@@ -1,0 +1,61 @@
+---
+- hosts: all
+  become: true
+  become_method: sudo
+
+  tasks:
+    - name: set timezone to Europe/Warsaw
+      timezone:
+        name: Europe/Warsaw
+      tags: config
+
+    - locale_gen:
+        name: en_US.UTF-8
+        state: absent
+      tags: config
+
+    - name: create cache, logs and sessions directories in /var/www/current/shared/var
+      file:
+        path: /var/www/current/shared/var/{{ item.name }}
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: 0755
+      with_items:
+        - { name: 'cache' }
+        - { name: 'logs' }
+        - { name: 'sessions' }
+      tags: directories
+
+    - name: install apt-transport-https, lsb-release, ca-certificates, git, zip, vim, nano
+      apt:
+        name:
+          - apt-transport-https
+          - lsb-release
+          - ca-certificates
+          - git
+          - zip
+          - vim
+          - nano
+      tags: additional-packages
+
+    - name: install Nginx
+      apt:
+        name: nginx
+      tags: nginx
+
+    - name: add Sury repository
+      template:
+        src: sury-packages.j2
+        dest: /etc/apt/sources.list.d/sury.list
+      tags: sury
+
+    - name: fetch and install Sury GnuPG key
+      get_url:
+        url: https://packages.sury.org/php/apt.gpg
+        dest: /etc/apt/trusted.gpg.d/php.gpg
+      tags: sury
+
+    - name: update APT
+      apt:
+        update_cache: yes

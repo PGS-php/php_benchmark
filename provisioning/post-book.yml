@@ -1,0 +1,81 @@
+---
+- hosts: all
+  become: true
+  become_method: sudo
+
+  vars:
+    mysql_root_pass: dg123NSf2
+    mysql_current_pass: password
+
+  tasks:
+    - name: symlink Nginx configuration
+      file:
+        src: /etc/nginx/sites-available/symfony.conf
+        dest: /etc/nginx/sites-enabled/symfony.conf
+        state: link
+      tags: nginx
+
+    - name: remove default Nginx configuration
+      file:
+        state: absent
+        path: /etc/nginx/sites-available/default
+      tags: nginx
+
+    - name: remove default Nginx configuration symlink
+      file:
+        state: absent
+        path: /etc/nginx/sites-enabled/default
+      tags: nginx
+
+    - name: restart Nginx
+      service:
+        name: nginx
+        state: restarted
+      tags: nginx
+
+    - name: set MySQL root password before installing
+      debconf: name='mysql-server' question='mysql-server/root_password' value='{{mysql_root_pass | quote}}' vtype='password'
+      tags: mysql
+
+    - name: confirm MySQL root password before installing
+      debconf: name='mysql-server' question='mysql-server/root_password_again' value='{{mysql_root_pass | quote}}' vtype='password'
+      tags: mysql
+
+    - name: install mysql
+      apt:
+        name: mysql-server
+      tags: mysql
+
+    - name: drop mysql current user
+      shell: mysql -u root -p{{ mysql_root_pass }} -e "GRANT USAGE ON *.* TO 'current'@'localhost'; DROP USER 'current'@'localhost';"
+
+    - name: create database current
+      shell: mysql -u root -p{{ mysql_root_pass }} -e "CREATE DATABASE IF NOT EXISTS current;"
+
+    - name: create mysql current user
+      shell: mysql -u root -p{{ mysql_root_pass }} -e "GRANT ALL PRIVILEGES ON current.* to 'current'@'localhost' IDENTIFIED BY '{{ mysql_current_pass }}';"
+
+    - name: download composer
+      get_url:
+        url: https://getcomposer.org/installer
+        dest: /tmp/installer
+      tags: composer
+
+    - name: install composer
+      shell: cat /tmp/installer | php -- --install-dir=/usr/local/bin
+      args:
+        creates: /usr/local/bin/composer
+      tags: composer
+
+    - name: rename composer.phar to composer
+      shell: mv /usr/local/bin/composer.phar /usr/local/bin/composer
+      args:
+        creates: /usr/local/bin/composer
+      tags: composer
+
+    - name: make composer executable
+      file:
+        path: /usr/local/bin/composer
+        mode: a+x
+        state: file
+      tags: composer

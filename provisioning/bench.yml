@@ -1,0 +1,21 @@
+---
+- hosts: all
+  become: true
+  become_method: sudo
+
+  tasks:
+    - name: install vim, nano
+      apt:
+        name:
+          - vim
+          - nano
+      tags: additional-packages
+    - name: install apache2
+      apt:
+        name: apache2
+      tags: apache2
+    - name: generate /etc/hosts file
+      template:
+        src: hosts.j2
+        dest: /etc/hosts
+      tags: configuration

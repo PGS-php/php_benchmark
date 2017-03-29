@@ -1,0 +1,25 @@
+---
+- hosts: all
+  become: true
+  become_method: sudo
+
+  tasks:
+    - name: install PHP7.1, php7.1-fpm and additional components
+      apt:
+        name:
+          - php7.1
+          - php7.1-fpm
+          - php7.1-xml
+          - php7.1-mysqlnd
+          - php7.1-curl
+          - php7.1-imap
+          - php7.1-gd
+      tags: php
+
+    - name: create Nginx configuration
+      template:
+        src: symfony.conf
+        dest: /etc/nginx/sites-available/symfony.conf
+      vars:
+        socket: '/var/run/php/php7.1-fpm.sock'
+      tags: nginx
