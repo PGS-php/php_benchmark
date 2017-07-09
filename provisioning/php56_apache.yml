@@ -1,0 +1,54 @@
+---
+- hosts: all
+  become: true
+  become_method: sudo
+
+  tasks:
+    - name: install Apache
+      apt:
+        name:
+          - apache2
+          - libapache2-mod-fastcgi
+          - libapache2-mod-php5.6
+      tags: apache
+
+    - name: install PHP5.6, php5.6-fpm and additional components
+      apt:
+        name:
+          - php5.6
+          - php5.6-fpm
+          - php5.6-xml
+          - php5.6-mysqlnd
+          - php5.6-curl
+          - php5.6-imap
+          - php5.6-gd
+      tags: php
+
+    - name: create Apache configuration
+      template:
+        src: symfony-apache.conf
+        dest: /etc/apache2/sites-available/symfony.conf
+      tags: apache
+
+    - name: symlink Apache configuration
+      file:
+        src: /etc/apache2/sites-available/symfony.conf
+        dest: /etc/apache2/sites-enabled/symfony.conf
+        state: link
+      tags: apache
+
+    - name: remove default Apache configuration
+      file:
+        state: absent
+        path: /etc/apache2/sites-enabled/000-default.conf
+      tags: apache
+
+    - name: enable apache rewrite mode
+      command: a2enmod rewrite
+      tags: apache
+
+    - name: restart Apache
+      service:
+        name: apache2
+        state: restarted
+      tags: apache

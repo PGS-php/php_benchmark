@@ -1,0 +1,49 @@
+---
+- hosts: all
+  become: true
+  become_method: sudo
+
+  tasks:
+    - name: install Nginx
+      apt:
+        name: nginx
+      tags: nginx
+
+    - name: install PHP5.6, php5.6-fpm and additional components
+      apt:
+        name:
+          - php5.6
+          - php5.6-fpm
+          - php5.6-xml
+          - php5.6-mysqlnd
+          - php5.6-curl
+          - php5.6-imap
+          - php5.6-gd
+      tags: php
+
+    - name: create Nginx configuration
+      template:
+        src: symfony-nginx.conf
+        dest: /etc/nginx/sites-available/symfony.conf
+      vars:
+        socket: '/var/run/php/php5.6-fpm.sock'
+      tags: nginx
+
+    - name: symlink Nginx configuration
+      file:
+        src: /etc/nginx/sites-available/symfony.conf
+        dest: /etc/nginx/sites-enabled/symfony.conf
+        state: link
+      tags: nginx
+
+    - name: remove default Nginx configuration
+      file:
+        state: absent
+        path: /etc/nginx/sites-enabled/default
+      tags: nginx
+
+    - name: restart Nginx
+      service:
+        name: nginx
+        state: restarted
+      tags: nginx

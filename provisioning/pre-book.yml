@@ -39,23 +39,9 @@
           - nano
       tags: additional-packages
 
-    - name: install Nginx
-      apt:
-        name: nginx
-      tags: nginx
-
-    - name: add Sury repository
-      template:
-        src: sury-packages.j2
-        dest: /etc/apt/sources.list.d/sury.list
-      tags: sury
-
-    - name: fetch and install Sury GnuPG key
-      get_url:
-        url: https://packages.sury.org/php/apt.gpg
-        dest: /etc/apt/trusted.gpg.d/php.gpg
-      tags: sury
-
-    - name: update APT
-      apt:
+    - name: add PHP Ondrej repository
+      apt_repository:
+        repo: ppa:ondrej/php
+        state: present
+        filename: 'php-ondrej'
         update_cache: yes
